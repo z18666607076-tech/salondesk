@@ -32,11 +32,18 @@ class DatabaseSeeder extends Seeder
             'slug' => 'glow-studio',
             'timezone' => 'Asia/Singapore',
             'currency' => 'SGD',
+            'locale' => 'en',
             'slot_interval_minutes' => 15,
             'cancellation_window_hours' => 2,
             'billing_email' => 'maya@glow-studio.test',
             'trial_ends_at' => now()->addDays(14),
         ]);
+
+        $tenant->forceFill([
+            'timezone' => 'Asia/Singapore',
+            'currency' => 'SGD',
+            'locale' => 'en',
+        ])->save();
 
         app(TenantContext::class)->set($tenant);
         TenantRoles::ensure($tenant);
@@ -44,10 +51,12 @@ class DatabaseSeeder extends Seeder
         $owner = $this->user($tenant, 'Maya Tan', 'maya@glow-studio.test', false);
         $anna = $this->user($tenant, 'Anna Chen', 'anna@glow-studio.test', true);
         $ben = $this->user($tenant, 'Ben Ong', 'ben@glow-studio.test', true);
+        $receptionist = $this->user($tenant, 'Rina Lim', 'rina@glow-studio.test', false);
 
         TenantRoles::assign($owner, 'owner');
         TenantRoles::assign($anna, 'staff');
         TenantRoles::assign($ben, 'staff');
+        TenantRoles::assign($receptionist, 'receptionist');
 
         $haircut = $this->service($tenant, 'Haircut', 'Cut and finish.', 45, 4800);
         $this->service($tenant, 'Color', 'Single-process color.', 90, 12800);
@@ -81,6 +90,27 @@ class DatabaseSeeder extends Seeder
                 'source' => AppointmentSource::Admin,
             ]);
         }
+
+        $guest = Customer::query()->firstOrCreate(
+            ['email' => 'wei@example.com'],
+            [
+                'name' => 'Wei Tan',
+                'phone' => '+65 9000 1111',
+            ],
+        );
+
+        if ($guest->appointments()->doesntExist()) {
+            $starts = CarbonImmutable::now($tenant->timezone)->next(CarbonImmutable::TUESDAY)->setTime(14, 0);
+
+            $guest->appointments()->create([
+                'staff_id' => $ben->id,
+                'service_id' => $haircut->id,
+                'starts_at' => $starts->utc(),
+                'ends_at' => $starts->addMinutes(45)->utc(),
+                'status' => AppointmentStatus::Confirmed,
+                'source' => AppointmentSource::Admin,
+            ]);
+        }
     }
 
     private function seedNorthshoreNails(): void
@@ -88,13 +118,21 @@ class DatabaseSeeder extends Seeder
         $tenant = Tenant::query()->firstOrCreate(['slug' => 'northshore-nails'], [
             'name' => 'Northshore Nails',
             'slug' => 'northshore-nails',
-            'timezone' => 'Asia/Singapore',
-            'currency' => 'SGD',
+            'timezone' => 'Asia/Shanghai',
+            'currency' => 'CNY',
+            'locale' => 'zh_CN',
             'slot_interval_minutes' => 15,
             'cancellation_window_hours' => 2,
             'billing_email' => 'lina@northshore-nails.test',
             'trial_ends_at' => null,
         ]);
+
+        $tenant->forceFill([
+            'timezone' => 'Asia/Shanghai',
+            'currency' => 'CNY',
+            'locale' => 'zh_CN',
+            'trial_ends_at' => null,
+        ])->save();
 
         app(TenantContext::class)->set($tenant);
         TenantRoles::ensure($tenant);
@@ -107,6 +145,8 @@ class DatabaseSeeder extends Seeder
 
         $this->service($tenant, 'Manicure', 'Classic manicure.', 45, 3800);
         $this->service($tenant, 'Pedicure', 'Classic pedicure.', 60, 4800);
+
+        Service::query()->update(['currency' => 'CNY']);
 
         foreach (range(1, 6) as $weekday) {
             $this->schedule($tenant, $noor, $weekday, '10:00:00', '18:00:00');

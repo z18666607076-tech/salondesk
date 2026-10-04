@@ -14,7 +14,11 @@ class AppointmentPolicy
 
     public function view(User $user, Appointment $appointment): bool
     {
-        return $this->manage($user, $appointment) || ($this->viewAny($user) && $user->tenant_id === $appointment->tenant_id && ($user->hasRole('owner') || $appointment->staff_id === $user->id));
+        if ($user->tenant_id !== $appointment->tenant_id || ! $user->can('appointments.view')) {
+            return false;
+        }
+
+        return $user->seesEveryAppointment() || $appointment->staff_id === $user->id;
     }
 
     public function create(User $user): bool
@@ -48,6 +52,6 @@ class AppointmentPolicy
             return false;
         }
 
-        return $user->hasRole('owner') || $appointment->staff_id === $user->id;
+        return $user->seesEveryAppointment() || $appointment->staff_id === $user->id;
     }
 }

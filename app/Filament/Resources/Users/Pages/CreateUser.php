@@ -19,7 +19,8 @@ class CreateUser extends CreateRecord
      */
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $this->assignedRole = (string) ($this->data['role'] ?? 'staff');
+        $role = (string) ($this->data['role'] ?? 'staff');
+        $this->assignedRole = in_array($role, ['owner', 'staff', 'receptionist'], true) ? $role : 'staff';
 
         unset($data['role']);
 

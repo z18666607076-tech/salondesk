@@ -18,7 +18,11 @@ until php -r 'try { new PDO("mysql:host=".getenv("DB_HOST").";port=".getenv("DB_
 done
 
 php artisan migrate --force --no-interaction
-php artisan db:seed --force --no-interaction
+
+if [ "${SEED_DEMO:-true}" = "true" ]; then
+    php artisan db:seed --force --no-interaction
+fi
+
 php artisan filament:assets --no-interaction
 
 # `php artisan serve` only forwards a small env allow-list to the PHP server.

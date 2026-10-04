@@ -43,7 +43,7 @@ class AppointmentResource extends Resource
         $query = parent::getEloquentQuery();
         $user = auth()->user();
 
-        if ($user instanceof User && ! $user->hasRole('owner')) {
+        if ($user instanceof User && ! $user->seesEveryAppointment()) {
             $query->where('staff_id', $user->id);
         }
 

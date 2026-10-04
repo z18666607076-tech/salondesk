@@ -68,7 +68,7 @@ class AppointmentsTable
                         $user = auth()->user();
 
                         try {
-                            app(CancelAppointment::class)->handle($record, $user?->hasRole('owner') ?? false);
+                            app(CancelAppointment::class)->handle($record, $user?->seesEveryAppointment() ?? false);
                         } catch (CancellationWindowException|SlotUnavailableException $exception) {
                             Notification::make()->title($exception->getMessage())->danger()->send();
                         }

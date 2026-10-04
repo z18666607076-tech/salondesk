@@ -14,7 +14,9 @@ WORKDIR /var/www/html
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
 COPY composer.json composer.lock ./
-RUN composer install --no-interaction --prefer-dist --no-scripts --no-autoloader
+ARG COMPOSER_MIRROR=
+RUN if [ -n "$COMPOSER_MIRROR" ]; then composer config -g repos.packagist composer "$COMPOSER_MIRROR"; fi \
+    && composer install --no-interaction --prefer-dist --no-scripts --no-autoloader
 
 COPY . .
 RUN mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \

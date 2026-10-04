@@ -2,7 +2,7 @@
 
 Multi-tenant appointment booking for salons, beauty studios, and other service businesses.
 
-A salon signs up, adds services and staff, publishes a booking link, and takes appointments without double-booking a chair. Owners run the business from a Filament panel. The public API is what a website, a mini program, or a front desk would call. An assistant turns “a haircut with Anna next Tuesday afternoon” into a real open slot.
+A salon signs up, adds services and staff, publishes a booking link, and takes appointments without double-booking a chair. Guests book at `/book/{slug}`. Owners and the front desk run the day from a Filament calendar. The public API is what a mini program or another client would call. An assistant turns “a haircut with Anna next Tuesday afternoon” into a real open slot.
 
 This repository is the foundation of that product: tenant isolation, the booking engine, a versioned API, roles, subscription plans, and the assistant boundary. It is built to be read as much as it is built to run.
 
@@ -19,9 +19,11 @@ Independent salons still run bookings in chat threads and shared spreadsheets. A
 
 - Tenants are businesses. Data is isolated by `tenant_id` in one MySQL database. See [ADR 0001](docs/adr/0001-tenancy-strategy.md).
 - Services carry a duration and a price. Staff have weekly working hours. Slots stay inside the shift, on the salon's interval, and never overlap a confirmed or completed visit.
+- Public booking page at `/book/{slug}`, mobile-friendly, using the same booking engine and assistant as the API.
 - Public API under `/api/v1`: services, staff, availability, book, cancel, and reschedule. Cancel and reschedule require the customer email used at booking.
 - Sanctum tokens for staff. A token from one salon gets **403** on another salon's API, not a silent empty list.
-- Filament admin at `/admin/{slug}` with owner and staff roles. Staff see their own appointments. Owners manage the salon, the plan, and every visit.
+- Filament admin at `/admin/{slug}` with owner, receptionist, and staff roles. Staff see their own appointments. Receptionists see every stylist on a shared day and week calendar and can bypass the cancellation window. They cannot manage billing or staff. Owners manage the salon, the plan, and every visit.
+- Each salon has its own currency, timezone, and locale. The booking page and admin chrome ship in English and Simplified Chinese.
 - Stripe subscriptions through Laravel Cashier, one billable customer per salon. `BILLING_DRIVER=fake` writes Cashier rows and needs no API keys. Set the driver to `stripe` and add test-mode keys when you want Checkout.
 - Booking assistant behind `BookingAssistant`. The fake driver is the default and is what tests use. The Laravel AI SDK driver runs only when `AI_BOOKING_DRIVER=laravel` and `OPENAI_API_KEY` is set, and it still has to match a slot the booking engine would return.
 - Booking confirmation mail, queued on the `notifications` queue.
@@ -31,8 +33,10 @@ Independent salons still run bookings in chat threads and shared spreadsheets. A
 ```mermaid
 flowchart TD
     client[Browser or API client]
+    client --> book["/book/{slug}"]
     client --> filament["Filament /admin/{slug}"]
     client --> api["/api/v1"]
+    book --> ctx[TenantContext]
     filament --> access{Owner can access this salon?}
     access -->|no| missing[404]
     access -->|yes| sync[SyncFilamentTenant]
@@ -56,7 +60,8 @@ The full walkthrough is in [docs/architecture.md](docs/architecture.md).
 | --- | --- |
 | Tenancy | Single database, `tenant_id`, global scope. Not a database-per-tenant package. |
 | Plans | Basic: 3 staff, no assistant. Pro: unlimited staff and the assistant. A generic trial counts as Pro. |
-| Time | Stored in UTC. Shifts and “afternoon” use the tenant timezone (`Asia/Singapore` in the demo). |
+| Time | Stored in UTC. Shifts and “afternoon” use the tenant timezone. |
+| Locale | `en` or `zh_CN` on the tenant. Currency is per salon too. |
 | Assistant | Interface plus a fake driver. The SDK path is a tool-using agent whose proposal is checked against `CalculateAvailability`. |
 | Billing | Cashier on the `Tenant` model. Fake driver in tests and in the default Compose file. |
 
@@ -89,7 +94,10 @@ docker compose up -d --build
 ```
 
 - App: http://localhost:8000
+- Glow Studio booking: http://localhost:8000/book/glow-studio
+- Northshore Nails booking (简体中文): http://localhost:8000/book/northshore-nails
 - Admin: http://localhost:8000/admin
+- Calendar: http://localhost:8000/admin/glow-studio/calendar
 - API docs: http://localhost:8000/docs/api
 - Mailpit: http://localhost:8025
 - Health: http://localhost:8000/up
@@ -119,13 +127,14 @@ Every seeded password is `password`.
 
 | Salon | Plan | Who | Email | API header |
 | --- | --- | --- | --- | --- |
-| Glow Studio | Pro trial, 14 days | Owner Maya Tan | `maya@glow-studio.test` | `X-Tenant: glow-studio` |
+| Glow Studio | Pro trial, 14 days. English, SGD, Asia/Singapore | Owner Maya Tan | `maya@glow-studio.test` | `X-Tenant: glow-studio` |
+| Glow Studio | | Receptionist Rina Lim | `rina@glow-studio.test` | |
 | Glow Studio | | Stylist Anna Chen | `anna@glow-studio.test` | |
 | Glow Studio | | Stylist Ben Ong | `ben@glow-studio.test` | |
-| Northshore Nails | Basic | Owner Lina Koh | `lina@northshore-nails.test` | `X-Tenant: northshore-nails` |
+| Northshore Nails | Basic. 简体中文, CNY, Asia/Shanghai | Owner Lina Koh | `lina@northshore-nails.test` | `X-Tenant: northshore-nails` |
 | Northshore Nails | | Staff Noor Idris | `noor@northshore-nails.test` | |
 
-Glow Studio has Haircut (45 min, SGD 48.00), Color, and Blowdry. Anna works Monday–Saturday 10:00–19:00. Priya Shah already has a Haircut next Monday at 10:00 with Anna.
+Glow Studio has Haircut (45 min, SGD 48.00), Color, and Blowdry. Anna works Monday–Saturday 10:00–19:00. Priya Shah already has a Haircut next Monday at 10:00 with Anna. Wei Tan has a Haircut next Tuesday at 14:00 with Ben, so the week calendar shows two stylists. Northshore Nails is the Chinese booking page: the assistant is hidden because the plan is Basic.
 
 Admin URLs: `/admin/glow-studio` and `/admin/northshore-nails`. Opening the other salon's URL returns 404.
 
@@ -162,6 +171,8 @@ Pest covers:
 
 - no cross-tenant reads by query, by id, or by another salon's Sanctum token
 - afternoon slots, double-booking, cancel, reschedule, and the staff cancellation rule
+- the hosted booking page, including a Simplified Chinese salon and an assistant confirmation
+- the receptionist calendar, including a stylist who cannot see another chair
 - the Basic staff cap
 - fake Cashier activation and a signed webhook
 - the assistant proposal, including the Laravel AI SDK path with `BookingAgent::fake()`
@@ -184,17 +195,16 @@ GitHub Actions runs Pint, Larastan, and Pest against MySQL 8.4 and Redis 7.
 
 Leave Stripe and OpenAI blank. The app boots and the tests pass without them. Never commit live keys.
 
+Production on a 4-core, 4 GB CentOS host in mainland China is a separate Compose file. The steps for Docker, firewalld, SELinux, registry mirrors, and the memory caps are in [docs/DEPLOY.md](docs/DEPLOY.md).
+
 ## Roadmap
 
-The foundation deliberately stops before a full product surface.
-
-- Receptionist role, with a calendar that can book any stylist in the salon
-- Customer accounts and a hosted booking page, not only the JSON API
-- Localisation and a currency per salon at checkout, not only on the service
-- Laravel Reverb for a live day-view in the panel
+- Customer accounts, so a guest can see upcoming visits after booking on the hosted page
+- Laravel Reverb so the day calendar updates without a refresh
 - Feature flags with Laravel Pennant for plan experiments
 - An MCP server in front of the same assistant tools
 - A WeChat mini program that talks to `/api/v1`
+- More locales beyond English and Simplified Chinese
 
 ## License
 

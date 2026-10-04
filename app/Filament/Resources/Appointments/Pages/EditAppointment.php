@@ -44,7 +44,7 @@ class EditAppointment extends EditRecord
                 $record = app(RescheduleAppointment::class)->handle(
                     $record,
                     $startsAt,
-                    $user?->hasRole('owner') ?? false,
+                    $user?->seesEveryAppointment() ?? false,
                 );
             } catch (SlotUnavailableException|CancellationWindowException $exception) {
                 throw ValidationException::withMessages([

@@ -7,8 +7,10 @@ SalonDesk is a Laravel monolith. One deployable serves the public booking API, t
 ```mermaid
 flowchart TD
     client[Browser or API client]
+    client --> book["/book/{slug}"]
     client --> filament["Filament /admin/{slug}"]
     client --> api["/api/v1"]
+    book --> ctx[TenantContext]
     filament --> access{Owner can access this salon?}
     access -->|no| missing[404]
     access -->|yes| sync[SyncFilamentTenant]
@@ -32,9 +34,9 @@ flowchart TD
 
 `CalculateAvailability` walks each bookable staff member's shift for the requested local date. Slots start on the shift, step by `slot_interval_minutes` (15 by default), and must finish before the shift ends. A slot is returned only when it is still in the future and does not overlap a confirmed or completed appointment. Cancelled visits free the time.
 
-`BookAppointment` locks the service, the staff row, and overlapping appointments, then writes the visit. Cancel and reschedule from the public API require the customer email that was used to book. Staff cancel and reschedule go through policies: a stylist can change only their own visits, and an owner can bypass the cancellation window. The window defaults to two hours. A visit that has already started cannot be moved.
+`BookAppointment` locks the service, the staff row, and overlapping appointments, then writes the visit. The public page at `/book/{slug}` and the JSON API both call it. Cancel and reschedule from the public API require the customer email that was used to book. A stylist can change only their own visits. An owner or a receptionist can change any visit in the salon and can bypass the cancellation window. The window defaults to two hours. A visit that has already started cannot be moved.
 
-Times are stored in UTC. Working hours and phrases such as "afternoon" (12:00–16:59) are interpreted in the tenant timezone. The demo salons use `Asia/Singapore`.
+Times are stored in UTC. Working hours and phrases such as "afternoon" (12:00–16:59) are interpreted in the tenant timezone. Each salon also stores a currency and a locale (`en` or `zh_CN`). The hosted page and the Filament panel follow that locale. Glow Studio uses English, SGD, and `Asia/Singapore`. Northshore Nails uses Simplified Chinese, CNY, and `Asia/Shanghai`.
 
 ## Billing
 
@@ -44,7 +46,7 @@ Times are stored in UTC. Working hours and phrases such as "afternoon" (12:00–
 
 `App\Ai\Contracts\BookingAssistant` is the only type controllers depend on. `FakeBookingAssistant` is the default. It is also selected when `AI_BOOKING_DRIVER` is not `laravel` or `OPENAI_API_KEY` is empty. The fake driver matches service and staff names, a weekday, and a part of day, then asks `CalculateAvailability` for a real slot.
 
-`LaravelAiBookingAssistant` uses the official `laravel/ai` SDK. `BookingAgent` is promptable, has tools (`ListServicesTool`, `ListStaffTool`, `SearchSlotsTool`), and returns structured `service_id`, `staff_id`, and `starts_at`. The assistant accepts that proposal only when the same slot exists in the booking engine. Confirming the proposal books it with source `ai`. The Basic plan receives 403.
+`LaravelAiBookingAssistant` uses the official `laravel/ai` SDK. `BookingAgent` is promptable, has tools (`ListServicesTool`, `ListStaffTool`, `SearchSlotsTool`), and returns structured `service_id`, `staff_id`, and `starts_at`. The assistant accepts that proposal only when the same slot exists in the booking engine. Confirming the proposal books it with source `ai`. The Basic plan receives 403. The hosted page uses the same assistant and hides it on Basic. The fake driver also understands a few Simplified Chinese time phrases (`明天`, `下午`, `星期二`).
 
 ## Mail
 
@@ -52,4 +54,6 @@ Times are stored in UTC. Working hours and phrases such as "afternoon" (12:00–
 
 ## Admin
 
-The `admin` panel is tenant-aware. Resources cover services, staff, weekly schedules, customers, and appointments. Creating an appointment calls `BookAppointment`. Changing the start time calls `RescheduleAppointment`. Owners manage billing from the panel; the fake driver activates a plan in place, and the Stripe driver redirects to Checkout.
+The `admin` panel is tenant-aware. Resources cover services, staff, weekly schedules, customers, and appointments. The Calendar page is a shared day and week view: owners and receptionists see every bookable stylist, and a stylist sees only their own column. Creating an appointment calls `BookAppointment`. Changing the start time calls `RescheduleAppointment`. Owners manage billing from the panel; the fake driver activates a plan in place, and the Stripe driver redirects to Checkout. A receptionist cannot open billing or manage staff.
+
+A manual production boot on a small CentOS host is described in [docs/DEPLOY.md](DEPLOY.md).

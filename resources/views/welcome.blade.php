@@ -46,6 +46,7 @@
     <header>
         <div class="mark">SalonDesk</div>
         <nav>
+            <a href="/book/glow-studio">Book</a>
             <a href="/admin">Admin</a>
             <a href="/docs/api">API docs</a>
         </nav>
@@ -53,21 +54,21 @@
     <h1>Bookings for every chair in the salon.</h1>
     <p class="lede">A multi-tenant appointment platform for salons and service businesses. Each business is a tenant, with its own staff, services, Stripe subscription, and an assistant that turns “a haircut with Anna next Tuesday afternoon” into an open slot.</p>
     <div class="actions">
-        <a class="button" href="/admin">Open the admin panel</a>
-        <a class="button secondary" href="/docs/api">Read the API</a>
+        <a class="button" href="/book/glow-studio">Book Glow Studio</a>
+        <a class="button secondary" href="/admin">Open the admin panel</a>
     </div>
     <section class="grid">
         <article>
             <h2>Glow Studio</h2>
-            <p>Pro trial. Owner <code>maya@glow-studio.test</code>, stylist <code>anna@glow-studio.test</code>. Password <code>password</code>. API header <code>X-Tenant: glow-studio</code>.</p>
+            <p>Pro trial, English, SGD, Asia/Singapore. Owner <code>maya@glow-studio.test</code>, receptionist <code>rina@glow-studio.test</code>, stylist <code>anna@glow-studio.test</code>. Password <code>password</code>. Booking page <a href="/book/glow-studio">/book/glow-studio</a>.</p>
         </article>
         <article>
             <h2>Northshore Nails</h2>
-            <p>Basic plan. Owner <code>lina@northshore-nails.test</code>. Password <code>password</code>. API header <code>X-Tenant: northshore-nails</code>.</p>
+            <p>Basic plan, Simplified Chinese, CNY, Asia/Shanghai. Owner <code>lina@northshore-nails.test</code>. Password <code>password</code>. Booking page <a href="/book/northshore-nails">/book/northshore-nails</a>.</p>
         </article>
         <article>
             <h2>What to try</h2>
-            <p>Compare the two tenants in Filament, book a Haircut with Anna, then ask the assistant endpoint for next Tuesday afternoon.</p>
+            <p>Book a Haircut on the public page, then open the shared calendar at <code>/admin/glow-studio/calendar</code> as Maya or Rina.</p>
         </article>
     </section>
     <footer>Local demo data is seeded by Docker. Stripe and OpenAI stay optional; both have fake drivers.</footer>

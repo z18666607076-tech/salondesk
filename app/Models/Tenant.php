@@ -16,6 +16,7 @@ use Laravel\Cashier\Billable;
     'slug',
     'timezone',
     'currency',
+    'locale',
     'slot_interval_minutes',
     'cancellation_window_hours',
     'billing_email',
