@@ -136,6 +136,24 @@ Every seeded password is `password`.
 
 Glow Studio has Haircut (45 min, SGD 48.00), Color, and Blowdry. Anna works Monday–Saturday 10:00–19:00. Priya Shah already has a Haircut next Monday at 10:00 with Anna. Wei Tan has a Haircut next Tuesday at 14:00 with Ben, so the week calendar shows two stylists. Northshore Nails is the Chinese booking page: the assistant is hidden because the plan is Basic.
 
+## Screenshots
+
+Glow Studio's booking page, in English. The guest picks a service, a time, and confirms. The assistant sits on the same page when the plan allows it.
+
+![Glow Studio booking page](docs/screenshots/booking-page.png)
+
+The same page on a narrow screen.
+
+![Glow Studio booking page on a phone](docs/screenshots/booking-page-mobile.png)
+
+Northshore Nails uses Simplified Chinese, CNY, and `Asia/Shanghai`.
+
+![Northshore Nails booking page](docs/screenshots/booking-page-zh.png)
+
+Maya's week calendar. Receptionist Rina sees the same two chairs. Anna, signed in as staff, sees only her own.
+
+![Glow Studio week calendar](docs/screenshots/admin-calendar.png)
+
 Admin URLs: `/admin/glow-studio` and `/admin/northshore-nails`. Opening the other salon's URL returns 404.
 
 ```bash
