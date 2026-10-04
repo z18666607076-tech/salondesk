@@ -26,7 +26,7 @@ class AppointmentController extends Controller
 
         $appointments = Appointment::query()
             ->with(['customer', 'staff', 'service'])
-            ->when(! $user->hasRole('owner'), fn ($query) => $query->where('staff_id', $user->id))
+            ->when(! $user->seesEveryAppointment(), fn ($query) => $query->where('staff_id', $user->id))
             ->orderBy('starts_at')
             ->get();
 
@@ -34,7 +34,7 @@ class AppointmentController extends Controller
     }
 
     /**
-     * Cancel an appointment. Owners may bypass the cancellation window.
+     * Cancel an appointment. Owners and receptionists may bypass the cancellation window.
      */
     #[Authorize('cancel', 'appointment')]
     public function cancel(Appointment $appointment, CancelAppointment $cancelAppointment): AppointmentResource
@@ -43,12 +43,12 @@ class AppointmentController extends Controller
         $user = request()->user();
 
         return AppointmentResource::make(
-            $cancelAppointment->handle($appointment, $user->hasRole('owner'))->load(['customer', 'staff', 'service']),
+            $cancelAppointment->handle($appointment, $user->seesEveryAppointment())->load(['customer', 'staff', 'service']),
         );
     }
 
     /**
-     * Reschedule an appointment. Owners may bypass the cancellation window.
+     * Reschedule an appointment. Owners and receptionists may bypass the cancellation window.
      */
     #[Authorize('reschedule', 'appointment')]
     public function reschedule(
@@ -63,7 +63,7 @@ class AppointmentController extends Controller
             $rescheduleAppointment->handle(
                 $appointment,
                 CarbonImmutable::parse($request->string('starts_at')->toString()),
-                $user->hasRole('owner'),
+                $user->seesEveryAppointment(),
             ),
         );
     }

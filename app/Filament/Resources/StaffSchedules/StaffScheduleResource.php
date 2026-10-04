@@ -45,7 +45,7 @@ class StaffScheduleResource extends Resource
         $query = parent::getEloquentQuery();
         $user = auth()->user();
 
-        if ($user instanceof User && ! $user->hasRole('owner')) {
+        if ($user instanceof User && ! $user->seesEveryAppointment()) {
             $query->where('user_id', $user->id);
         }
 

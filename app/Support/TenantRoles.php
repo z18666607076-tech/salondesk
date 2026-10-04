@@ -41,6 +41,21 @@ final class TenantRoles
         'assistant.use',
     ];
 
+    /**
+     * Front desk: every appointment in the salon, no billing and no staff admin.
+     *
+     * @var list<string>
+     */
+    public const RECEPTIONIST_PERMISSIONS = [
+        'services.view',
+        'staff.view',
+        'appointments.view',
+        'appointments.manage',
+        'customers.view',
+        'customers.manage',
+        'assistant.use',
+    ];
+
     public static function ensure(Tenant $tenant): void
     {
         $previous = getPermissionsTeamId();
@@ -53,9 +68,11 @@ final class TenantRoles
 
         $owner = Role::findOrCreate('owner', 'web');
         $staff = Role::findOrCreate('staff', 'web');
+        $receptionist = Role::findOrCreate('receptionist', 'web');
 
         $owner->syncPermissions(self::PERMISSIONS);
         $staff->syncPermissions(self::STAFF_PERMISSIONS);
+        $receptionist->syncPermissions(self::RECEPTIONIST_PERMISSIONS);
 
         setPermissionsTeamId($previous);
     }

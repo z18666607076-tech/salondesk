@@ -115,8 +115,18 @@ final class FakeBookingAssistant implements BookingAssistant
 
     private function partOfDay(string $message): ?string
     {
-        foreach (['morning', 'afternoon', 'evening'] as $part) {
-            if (str_contains($message, $part)) {
+        $parts = [
+            'morning' => 'morning',
+            '上午' => 'morning',
+            '早上' => 'morning',
+            'afternoon' => 'afternoon',
+            '下午' => 'afternoon',
+            'evening' => 'evening',
+            '晚上' => 'evening',
+        ];
+
+        foreach ($parts as $needle => $part) {
+            if (str_contains($message, $needle)) {
                 return $part;
             }
         }
@@ -126,11 +136,11 @@ final class FakeBookingAssistant implements BookingAssistant
 
     private function resolveDate(string $message, CarbonImmutable $now): ?CarbonImmutable
     {
-        if (str_contains($message, 'tomorrow')) {
+        if (str_contains($message, 'tomorrow') || str_contains($message, '明天')) {
             return $now->addDay()->startOfDay();
         }
 
-        if (preg_match('/\btoday\b/', $message) === 1) {
+        if (preg_match('/\btoday\b/u', $message) === 1 || str_contains($message, '今天')) {
             return $now->startOfDay();
         }
 
@@ -138,6 +148,30 @@ final class FakeBookingAssistant implements BookingAssistant
             $day = constant(CarbonImmutable::class.'::'.strtoupper($matches[1]));
 
             return $now->next($day)->startOfDay();
+        }
+
+        $weekdays = [
+            '星期一' => CarbonImmutable::MONDAY,
+            '星期二' => CarbonImmutable::TUESDAY,
+            '星期三' => CarbonImmutable::WEDNESDAY,
+            '星期四' => CarbonImmutable::THURSDAY,
+            '星期五' => CarbonImmutable::FRIDAY,
+            '星期六' => CarbonImmutable::SATURDAY,
+            '星期日' => CarbonImmutable::SUNDAY,
+            '星期天' => CarbonImmutable::SUNDAY,
+            '周一' => CarbonImmutable::MONDAY,
+            '周二' => CarbonImmutable::TUESDAY,
+            '周三' => CarbonImmutable::WEDNESDAY,
+            '周四' => CarbonImmutable::THURSDAY,
+            '周五' => CarbonImmutable::FRIDAY,
+            '周六' => CarbonImmutable::SATURDAY,
+            '周日' => CarbonImmutable::SUNDAY,
+        ];
+
+        foreach ($weekdays as $label => $day) {
+            if (str_contains($message, $label)) {
+                return $now->next($day)->startOfDay();
+            }
         }
 
         return null;

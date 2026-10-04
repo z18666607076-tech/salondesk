@@ -77,6 +77,11 @@ class User extends Authenticatable implements FilamentUser, HasTenants
         return $this->tenant_id === $tenant->getKey();
     }
 
+    public function seesEveryAppointment(): bool
+    {
+        return $this->hasRole('owner') || $this->hasRole('receptionist');
+    }
+
     /**
      * @return HasMany<StaffSchedule, $this>
      */

@@ -25,6 +25,7 @@ class TenantFactory extends Factory
             'slug' => Str::slug($name).'-'.fake()->unique()->numerify('###'),
             'timezone' => 'Asia/Singapore',
             'currency' => 'SGD',
+            'locale' => 'en',
             'slot_interval_minutes' => 15,
             'cancellation_window_hours' => 2,
             'billing_email' => fake()->companyEmail(),

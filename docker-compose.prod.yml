@@ -1,0 +1,93 @@
+# Single-host production stack. Read docs/DEPLOY.md before the first boot.
+# MySQL and Redis stay on the Compose network. Mailpit is not included.
+
+services:
+  app:
+    image: salondesk-app
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      args:
+        COMPOSER_MIRROR: https://mirrors.aliyun.com/composer/
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      LOG_CHANNEL: stderr
+      DB_HOST: mysql
+      REDIS_HOST: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+      SEED_DEMO: "false"
+      PHP_CLI_SERVER_WORKERS: "2"
+    ports:
+      - "80:8000"
+    mem_limit: 768m
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/up"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+
+  worker:
+    image: salondesk-app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      LOG_CHANNEL: stderr
+      DB_HOST: mysql
+      REDIS_HOST: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+      SEED_DEMO: "false"
+    entrypoint: ["php", "artisan", "queue:work", "redis", "--queue=notifications,default", "--sleep=1", "--tries=3", "--max-time=3600", "--no-interaction"]
+    mem_limit: 256m
+    depends_on:
+      app:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    command:
+      - mysqld
+      - --innodb-buffer-pool-size=512M
+      - --performance-schema=OFF
+      - --max-connections=40
+    volumes:
+      - mysql_data:/var/lib/mysql:z
+    mem_limit: 1280m
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -p\"$${MYSQL_ROOT_PASSWORD}\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru", "--save", ""]
+    volumes:
+      - redis_data:/data:z
+    mem_limit: 192m
+
+volumes:
+  mysql_data:
+  redis_data:

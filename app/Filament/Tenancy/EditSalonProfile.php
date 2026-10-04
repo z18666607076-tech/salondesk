@@ -2,6 +2,8 @@
 
 namespace App\Filament\Tenancy;
 
+use App\Support\SalonPreferences;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Pages\Tenancy\EditTenantProfile;
 use Filament\Schemas\Schema;
@@ -20,13 +22,17 @@ class EditSalonProfile extends EditTenantProfile
                 TextInput::make('name')
                     ->required()
                     ->maxLength(255),
-                TextInput::make('timezone')
-                    ->required()
-                    ->maxLength(64),
-                TextInput::make('currency')
-                    ->required()
-                    ->minLength(3)
-                    ->maxLength(3),
+                Select::make('timezone')
+                    ->options(SalonPreferences::options(SalonPreferences::TIMEZONES))
+                    ->searchable()
+                    ->required(),
+                Select::make('currency')
+                    ->options(SalonPreferences::options(SalonPreferences::CURRENCIES))
+                    ->searchable()
+                    ->required(),
+                Select::make('locale')
+                    ->options(SalonPreferences::LOCALES)
+                    ->required(),
                 TextInput::make('slot_interval_minutes')
                     ->numeric()
                     ->required()

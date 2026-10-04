@@ -30,6 +30,7 @@ class UserForm
                 Select::make('role')
                     ->options([
                         'owner' => 'Owner',
+                        'receptionist' => 'Receptionist',
                         'staff' => 'Staff',
                     ])
                     ->default('staff')
@@ -38,6 +39,7 @@ class UserForm
                     ->dehydrated(false),
                 Toggle::make('is_bookable')
                     ->label('Can take appointments')
+                    ->helperText('Turn this off for a receptionist who only runs the desk.')
                     ->default(true),
             ]);
     }

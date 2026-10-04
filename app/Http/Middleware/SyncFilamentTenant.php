@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Tenant;
+use App\Support\SalonPreferences;
 use App\Tenancy\TenantContext;
 use Closure;
 use Filament\Facades\Filament;
@@ -17,6 +18,7 @@ class SyncFilamentTenant
 
         if ($tenant instanceof Tenant) {
             app(TenantContext::class)->set($tenant);
+            SalonPreferences::apply($tenant);
         }
 
         return $next($request);
