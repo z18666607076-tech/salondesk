@@ -17,8 +17,8 @@ COPY composer.json composer.lock ./
 RUN composer install --no-interaction --prefer-dist --no-scripts --no-autoloader
 
 COPY . .
-RUN composer install --no-interaction --prefer-dist \
-    && mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+RUN mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+    && composer install --no-interaction --prefer-dist \
     && chown -R www-data:www-data storage bootstrap/cache public
 
 USER www-data
