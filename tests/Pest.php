@@ -7,9 +7,12 @@ use App\Models\User;
 use App\Support\TenantRoles;
 use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class)->in('Feature');
+uses(TestCase::class, RefreshDatabase::class)->beforeEach(function () {
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+})->in('Feature');
 
 /**
  * @param  array<string, mixed>  $tenantAttributes
